@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>File Upload Example</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+    }
+
+    #upload-form {
+      max-width: 400px;
+      margin: 0 auto;
+      padding: 20px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+
+    #upload-form input[type=file] {
+      margin-bottom: 10px;
+    }
+
+    #upload-form button {
+      background-color: #4CAF50;
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    #upload-form button:hover {
+      background-color: #45a049;
+    }
+
+    #uploaded-files {
+      margin-top: 20px;
+    }
+
+    #uploaded-files ul {
+      list-style-type: none;
+      padding: 0;
+    }
+
+    #uploaded-files li {
+      margin-bottom: 5px;
+    }
+  </style>
+</head>
+<body>
+  <h1>File Upload Example</h1>
+
+  <form id="upload-form">
+    <input type="file" id="file-input" name="files" multiple>
+    <button type="button" onclick="uploadFiles()">Upload</button>
+  </form>
+
+  <div id="upload-status"></div>
+
+  <div id="uploaded-files">
+    <h2>Uploaded Files:</h2>
+    <ul id="file-list"></ul>
+  </div>
+
+  <div id="file-preview" class="popup" style="display: none;">
+  
+  </div>
+
+
+  <script>
+    function uploadFiles() {
+      const fileInput = document.getElementById('file-input');
+      const files = fileInput.files;
+      const formData = new FormData();
+
+      for (let i = 0; i < files.length; i++) {
+        formData.append('files', files[i]);
+      }
+
+      fetch('/upload', {
+        method: 'POST',
+        body: formData
+      })
+      .then(response => {
+        if (response.ok) {
+          document.getElementById('upload-status').textContent = 'Files uploaded successfully!';
+          response.json().then(data => {
+            updateFileList(data.files);
+          });
+        } else {
+          document.getElementById('upload-status').textContent = 'Error uploading files.';
+        }
+      })
+      .catch(error => {
+        document.getElementById('upload-status').textContent = 'Error uploading files...';
+        console.error('Error:', error);
+      });
+    }
+
+    function updateFileList(files) {
+      const fileList = document.getElementById('file-list');
+      fileList.innerHTML = '';
+
+      files.forEach(file => {
+        const listItem = document.createElement('li');
+        const fileLink = document.createElement('a');
+        fileLink.textContent = file.originalname;
+        // fileLink.href = `/uploads/${file.filename}`;
+        // fileLink.target = '_blank';
+        fileLink.addEventListener('click', () => {
+          viewFile(file);
+        });
+        listItem.appendChild(fileLink);
+        const copyButton = document.createElement('button');
+        copyButton.textContent = 'Copy Link';
+        copyButton.addEventListener('click', () => {
+          navigator.clipboard.writeText(`${window.location.origin}/uploads/${file.filename}`);
+          alert('Link copied to clipboard!');
+        });
+        listItem.appendChild(copyButton);
+        fileList.appendChild(listItem);
+      });
+    }
+
+    function viewFile(file) {
+      const filePreview = document.getElementById('file-preview');
+      filePreview.style.display = 'block';
+
+      if (file.mimetype === 'text/plain') {
+        fetch(`/uploads/${file.filename}`)
+          .then(response => response.text())
+          .then(content => {
+            filePreview.textContent = content;
+          });
+      } else if (file.mimetype === 'image/png') {vg
+        const imgElement = document.createElement('img'); 
+        imgElement.src = `/uploads/${file.filename}`;
+        imgElement.alt = file.filename;
+        imgElement.style.maxWidth = '100%';
+        filePreview.innerHTML = '';
+        filePreview.appendChild(imgElement);
+      } else {
+        filePreview.textContent = 'This file type cannot be previewed.';
+      }
+    }
+
+  </script>
+</body>
+</html>
